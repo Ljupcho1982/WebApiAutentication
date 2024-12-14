@@ -6,6 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WebApplication4.Data;
 
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -14,58 +16,51 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<AppDbContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(option =>
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireDigit = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+})
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
-    option.Password.RequiredLength = 6;
-    option.Password.RequireNonAlphanumeric = false;
-    option.Password.RequireDigit = false;
-    option.Password.RequireUppercase = false;
 
-}).AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders();
 
-builder.Services.AddAuthentication(option =>
+builder.Services.AddAuthentication(options =>
 {
-    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-
-
-
-}).AddJwtBearer(option =>
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
 {
-    option.TokenValidationParameters = new TokenValidationParameters
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-
         ValidateIssuer = true,
         ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:issuer"],
-        IssuerSigningKey=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
-
-
-
-
-
 });
 
-builder.Services.AddAuthorization(option =>
+builder.Services.AddAuthorization(options =>
 {
-
-    option.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
-    option.AddPolicy("User", policy => policy.RequireRole("User"));
-
-
-
+    options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserPolicy", policy => policy.RequireRole("User"));
 });
 
 
-
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 
 var app = builder.Build();

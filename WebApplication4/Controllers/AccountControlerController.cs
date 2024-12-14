@@ -38,6 +38,11 @@ namespace WebApplication4.Controllers
                 return Ok(new { message = "User registered successfully" });
             }
 
+            var secretKey = _configuration["JwtSettings:SecretKey"];
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                throw new InvalidOperationException("JWT secret key is not set.");
+            }
             return BadRequest(result.Errors);
         }
 
